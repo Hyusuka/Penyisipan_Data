@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Extract & Decrypt | AES + LSB Steganography</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/extract.css') }}"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="app-container">
+      <main class="main-content">
+        <div class="card">
+          <h1 class="card-title">🔓 Extract & Decrypt</h1>
+          <p class="card-subtitle">
+            Recover hidden data from your steganographic image
+          </p>
+
+          {% with messages = get_flashed_messages(with_categories=true) %} {% if
+          messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+          {% endif %} {% endwith %}
+
+          <form method="post" enctype="multipart/form-data" class="modern-form">
+            <div class="form-group">
+              <label class="form-label">
+                <span class="icon">🖼️</span>
+                <span>Steganographic Image (.PNG):</span>
+              </label>
+              <div class="file-upload-wrapper">
+                <input
+                  type="file"
+                  name="steg_image"
+                  required
+                  class="file-upload"
+                  id="stegImage"
+                />
+                <div class="file-upload-mask">
+                  Select your steganographic image
+                </div>
+              </div>
+              <div id="image-preview" class="image-preview"></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                <span class="icon">📏</span>
+                <span>Estimated encrypted data length (bytes):</span>
+              </label>
+              <input
+                type="number"
+                name="data_length"
+                placeholder="Example: 512"
+                class="modern-input"
+                required
+                min="1"
+              />
+              <p class="info-text">
+                ℹ️ Enter the approximate size of your hidden data in bytes
+              </p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                <span class="icon">🔑</span>
+                <span>Decryption Key:</span>
+              </label>
+              <input
+                type="text"
+                name="key"
+                placeholder="Example: mysecurepassword123"
+                class="modern-input"
+                required
+              />
+            </div>
+
+            {% if decrypted_message %}
+            <div class="result-section">
+              <div class="decrypted-result">
+                <h3>Hasil Dekripsi:</h3>
+                <pre class="decrypted-text">{{ decrypted_message }}</pre>
+              </div>
+
+              {% if output_filename %}
+              <div class="download-actions">
+                <a
+                  href="{{ url_for('main.download_file', filename=output_filename) }}"
+                  class="download-btn"
+                  download="{{ output_filename }}"
+                >
+                  <i class="fas fa-download"></i>
+                  Download .txt
+                </a>
+              </div>
+              {% endif %}
+            </div>
+            {% endif %}
+            <button type="submit" class="primary-button">
+              <span class="button-icon">🔍</span>
+              <span>Extract & Decrypt Data</span>
+            </button>
+          </form>
+
+          <div class="navigation-links">
+            <a href="{{ url_for('main.encrypt_route') }}" class="link-button">
+              <span class="button-icon">⬅️</span>
+              <span>Back to Encryption</span>
+            </a>
+            <a href="{{ url_for('main.home') }}" class="link-button">
+              <span class="button-icon">🏠</span>
+              <span>Return to Home</span>
+            </a>
+          </div>
+        </div>
+      </main>
+
+      <footer class="modern-footer">
+        <div class="footer-content">
+          <p class="footer-text">AES + LSB Steganography Tool</p>
+          <p class="footer-text">
+            👨‍💻 Dibuat oleh <strong>Juan Wens Sanctung Rahawarin</strong>
+          </p>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      document
+        .getElementById("stegImage")
+        .addEventListener("change", function (e) {
+          const file = e.target.files[0];
+          const preview = document.getElementById("image-preview");
+          const fileLabel = this.nextElementSibling;
+
+          if (!file) {
+            preview.innerHTML = "";
+            fileLabel.textContent = "Select your steganographic image";
+            return;
+          }
+
+          fileLabel.textContent = file.name;
+
+          if (!file.type.match("image.*")) {
+            preview.innerHTML =
+              '<div class="preview-error">⚠️ Selected file is not an image</div>';
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            preview.innerHTML = `<img src="${event.target.result}" alt="Selected image preview" class="preview-image">`;
+          };
+          reader.readAsDataURL(file);
+        });
+    </script>
+  </body>
+</html>

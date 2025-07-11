@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AES + LSB Steganography</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/enkripsi.css') }}"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  </head>
+  <body>
+    <div class="app-container">
+      <main class="main-content">
+        <div class="card">
+          <h1 class="card-title">🔒 AES + LSB Steganography</h1>
+          <p class="card-subtitle">
+            Secure encryption combined with invisible data hiding
+          </p>
+
+          {% with messages = get_flashed_messages(with_categories=true) %} {% if
+          messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+          {% endif %} {% endwith %}
+
+          <form method="post" enctype="multipart/form-data" class="modern-form">
+            <div class="form-group">
+              <label class="form-label">
+                <span class="icon">📁</span>
+                <span>Upload File OR enter text:</span>
+              </label>
+              <div class="file-upload-wrapper">
+                <input type="file" name="file" class="file-upload" />
+                <div class="file-upload-mask">Choose file</div>
+              </div>
+              <div class="divider">
+                <span>or</span>
+              </div>
+              <textarea
+                name="input_text"
+                rows="4"
+                placeholder="Enter your secret message here..."
+                class="modern-textarea"
+                oninput="previewText(this.value)"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                <span class="icon">🖼️</span>
+                <span>Cover image (.PNG recommended):</span>
+              </label>
+              <div class="file-upload-wrapper">
+                <input type="file" name="image" required class="file-upload" />
+                <div class="file-upload-mask">Select image</div>
+              </div>
+              <p id="capacity-info" class="info-text">
+                ℹ️ Upload an image to see data capacity
+              </p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                <span class="icon">🔑</span>
+                <span>Encryption Key:</span>
+              </label>
+              <input
+                type="text"
+                name="key"
+                placeholder="Example: mysecurepassword123"
+                class="modern-input"
+                required
+              />
+            </div>
+
+            <button type="submit" class="primary-button">
+              <span class="button-icon">⚡</span>
+              <span>Process Encryption & Embedding</span>
+            </button>
+
+            <div class="form-group">
+              <label class="form-label">
+                <span class="icon">👁️</span>
+                <span>Text Preview:</span>
+              </label>
+              <div id="preview-box" class="preview-box"></div>
+            </div>
+          </form>
+        </div>
+
+        <div class="navigation-link">
+          <a href="{{ url_for('main.extract_route') }}" class="link-button">
+            <span class="button-icon">🧩</span>
+            <span>Continue to Extraction & Decryption</span>
+            <span class="arrow">→</span>
+          </a>
+        </div>
+      </main>
+
+      <footer class="modern-footer">
+        <div class="footer-content">
+          <p class="footer-text">AES + LSB Steganography Tool</p>
+          <p class="footer-text">
+            👨‍💻 Dibuat oleh <strong>Juan Wens Sanctung Rahawarin</strong>
+          </p>
+        </div>
+      </footer>
+    </div>
+    <script>
+      function previewText(value) {
+        document.getElementById("preview-box").textContent = value;
+      }
+
+      document
+        .querySelector('input[name="image"]')
+        .addEventListener("change", function (event) {
+          const file = event.target.files[0];
+          if (!file) return;
+
+          const img = new Image();
+          img.onload = function () {
+            const width = img.width;
+            const height = img.height;
+            const capacityBytes = Math.floor((width * height * 3) / 8) - 4;
+            const info = `🧰 ${width}×${height}px image can hide ~${capacityBytes.toLocaleString()} bytes (${Math.floor(
+              capacityBytes / 1024
+            )}KB) of data`;
+            document.getElementById("capacity-info").textContent = info;
+          };
+          img.src = URL.createObjectURL(file);
+        });
+
+      document.querySelectorAll(".file-upload").forEach((input) => {
+        input.addEventListener("change", function (e) {
+          const fileName = e.target.files[0]?.name || "No file selected";
+          this.nextElementSibling.textContent = fileName;
+        });
+      });
+
+      document.querySelector("form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        try {
+          // Init loading state
+          submitButton.disabled = true;
+          submitButton.innerHTML = `<span class="button-icon">⏳</span> Processing...`;
+
+          // Track total processing time
+          const totalStartTime = performance.now();
+
+          // Send encryption request
+          const encryptResponse = await fetch(
+            "{{ url_for('main.encrypt_route') }}",
+            {
+              method: "POST",
+              body: formData,
+            }
+          );
+
+          // Handle response
+          if (!encryptResponse.ok) {
+            const errorData = await encryptResponse.json().catch(() => ({}));
+            throw new Error(
+              errorData.message ||
+                `HTTP error! status: ${encryptResponse.status}`
+            );
+          }
+
+          const encryptResult = await encryptResponse.json();
+
+          if (encryptResult.status !== "success") {
+            throw new Error(encryptResult.message || "Encryption failed");
+          }
+
+          // Calculate total processing time
+          const totalDuration = (performance.now() - totalStartTime).toFixed(2);
+
+          // Build metrics HTML
+          const metricsHTML = `
+            <div class="performance-metrics">
+                <div class="metric-item">
+                    <span class="metric-label">AES-128 Encryption</span>
+                    <span class="metric-value">${encryptResult.metrics.aes_time}</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">LSB Embedding</span>
+                    <span class="metric-value">${encryptResult.metrics.lsb_time}</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Total Processing</span>
+                    <span class="metric-value">${encryptResult.metrics.total_time}</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">File Size</span>
+                    <span class="metric-value">${encryptResult.metrics.file_size}</span>
+                </div>
+            </div>
+          `;
+
+          // Show success alert with metrics
+          const { value: userAction } = await Swal.fire({
+            title: "Encryption Successful!",
+            html: `${metricsHTML}</div>`,
+            icon: "success",
+            showCancelButton: true,
+            confirmButtonText: "Send via Email",
+            cancelButtonText: "Download Now",
+            showCloseButton: true,
+          });
+
+          if (userAction) {
+            const { value: email } = await Swal.fire({
+              title: "Recipient Email",
+              input: "email",
+              inputLabel: "Email Address",
+              inputPlaceholder: "example@domain.com",
+              showCancelButton: true,
+              inputValidator: (value) => {
+                if (!value) return "Please enter an email address!";
+                if (
+                  !/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(value)
+                ) {
+                  return "Please enter a valid email address!";
+                }
+              },
+            });
+
+            if (email) {
+              try {
+                const sendResponse = await fetch(
+                  "{{ url_for('main.send_email_confirmation') }}",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      email: email,
+                      filename: encryptResult.filename,
+                    }),
+                  }
+                );
+
+                const result = await sendResponse.json();
+
+                if (!sendResponse.ok) {
+                  throw new Error(result.message || "Failed to send email");
+                }
+
+                await Swal.fire({
+                  title: "Email Sent!",
+                  text: "Your encrypted file has been sent successfully",
+                  icon: "success",
+                });
+              } catch (error) {
+                await Swal.fire({
+                  title: "Failed to Send",
+                  text: error.message,
+                  icon: "error",
+                });
+              }
+            }
+          } else {
+            // Download flow
+            try {
+              const downloadStartTime = performance.now();
+
+              // Trigger download
+              const link = document.createElement("a");
+              link.href = encryptResult.download_url;
+              link.download = encryptResult.filename || "encrypted_image.png";
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+
+              // Measure actual download speed
+              const blob = await fetch(encryptResult.download_url).then((res) =>
+                res.blob()
+              );
+              const downloadDuration = (
+                performance.now() - downloadStartTime
+              ).toFixed(2);
+              const fileSizeKB = (blob.size / 1024).toFixed(2);
+              const downloadSpeed = (
+                fileSizeKB /
+                (downloadDuration / 1000)
+              ).toFixed(2);
+
+              await Swal.fire({
+                title: "Download Selesai!",
+                html: `
+                  <div class="download-metrics">
+                      <div>Durasi: ${downloadDuration}ms</div>
+                      <div>Kecepatan: ${downloadSpeed}KB/s</div>
+                  </div>
+                `,
+                icon: "success",
+              });
+            } catch (error) {
+              await Swal.fire({
+                icon: "error",
+                title: "Download Gagal",
+                text: error.message || "File tidak dapat diakses di server",
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            html: `
+              <div class="error-content">
+                  <p>${error.message || "Terjadi kesalahan sistem!"}</p>
+                  ${error.details ? `<small>${error.details}</small>` : ""}
+              </div>
+            `,
+            showCloseButton: true,
+          });
+        } finally {
+          // Reset button state
+          submitButton.disabled = false;
+          submitButton.innerHTML = `
+            <span class="button-icon">⚡</span>
+            <span>Process Encryption & Embedding</span>
+          `;
+        }
+      });
+    </script>
+  </body>
+</html>

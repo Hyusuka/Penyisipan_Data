@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Beranda - Aplikasi Kriptografi & Steganografi</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}" />
+</head>
+<body>
+  <div class="main-container">
+    <header class="app-header">
+      <h1>🔐 Aplikasi Kriptografi & Steganografi</h1>
+      <h2>Algoritma AES-128 bit & LSB</h2>
+    </header>
+
+    <div class="action-buttons horizontal-layout">
+      <a href="{{ url_for('main.encrypt_route') }}" class="action-btn encrypt-btn">
+        🔒 Enkripsi + Steganografi
+      </a>
+      <a href="{{ url_for('main.extract_route') }}" class="action-btn extract-btn">
+        🧩 Ekstraksi + Dekripsi
+      </a>
+    </div>
+
+    <footer class="app-footer">
+      <p>© 2025 Aplikasi Kriptografi & Steganografi</p>
+      <p>👨‍💻 Dibuat oleh <strong>Juan Wens Sanctung Rahawarin</strong></p>
+    </footer>
+  </div>
+</body>
+</html>
